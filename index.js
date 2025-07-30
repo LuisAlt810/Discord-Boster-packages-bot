@@ -1,4 +1,3 @@
-// index.js
 const { Client, GatewayIntentBits, Partials, ActionRowBuilder, ButtonBuilder, ButtonStyle, Events } = require('discord.js');
 require('dotenv').config();
 
@@ -23,14 +22,16 @@ const ROLE_IDS = {
   blue: '1400073437904502996',
 };
 
+// Special user allowed to pick roles regardless of booster role
+const ALLOWED_USER_ID = '1370394029665030295';
+
 client.once(Events.ClientReady, () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
-// Auto-assign perks roles when someone boosts
+// Auto-assign booster & giveaway roles when someone boosts
 client.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
   try {
-    // Detect new boost
     if (!oldMember.premiumSince && newMember.premiumSince) {
       await newMember.roles.add([ROLE_IDS.booster, ROLE_IDS.giveaway]);
       console.log(`Assigned booster & giveaway roles to ${newMember.user.tag}`);
@@ -40,7 +41,7 @@ client.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
   }
 });
 
-// Handle !perksSend command
+// !perksSend command to send role picker buttons
 client.on(Events.MessageCreate, async (message) => {
   if (!message.guild || message.author.bot) return;
 
@@ -48,7 +49,6 @@ client.on(Events.MessageCreate, async (message) => {
   if (!message.content.startsWith(`${prefix}perksSend`)) return;
 
   const args = message.content.trim().split(/ +/g);
-  // Usage: !perksSend #channel or !perksSend channelId
   if (args.length < 2) {
     return message.reply({ content: 'Usage: `!perksSend <#channel|channel_id>`', ephemeral: true });
   }
@@ -65,7 +65,7 @@ client.on(Events.MessageCreate, async (message) => {
     return message.reply({ content: 'Channel not found. Make sure to mention or use a valid ID.', ephemeral: true });
   }
 
-  // Build buttons
+  // Build buttons with matching colors
   const row = new ActionRowBuilder()
     .addComponents(
       new ButtonBuilder()
@@ -98,10 +98,19 @@ client.on(Events.MessageCreate, async (message) => {
   return message.reply({ content: `Perks message sent in ${channel}.`, ephemeral: true });
 });
 
-// Handle button interactions
+// Button interaction handler with user and booster role check
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isButton()) return;
-  const { customId, member } = interaction;
+  const { customId, member, user } = interaction;
+
+  // Only allow if user is special allowed user OR has booster role
+  if (user.id !== ALLOWED_USER_ID && !member.roles.cache.has(ROLE_IDS.booster)) {
+    return interaction.reply({
+      content: '❌ Only Booster role holders or the special user can pick these color roles!',
+      ephemeral: true,
+    });
+  }
+
   const roleMap = {
     role_red: ROLE_IDS.red,
     role_purple: ROLE_IDS.purple,
@@ -123,7 +132,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   } catch (err) {
     console.error('Error toggling role:', err);
-    await interaction.reply({ content: 'There was an error while assigning the role.', ephemeral: true });
+    await interaction.reply({
+      content: 'There was an error while assigning the role.',
+      ephemeral: true,
+    });
   }
 });
 
