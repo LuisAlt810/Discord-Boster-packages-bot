@@ -1,0 +1,19 @@
+{
+  "name": "perks-role-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for auto‑boost perks and color role picker",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.21.0",
+    "dotenv": "^16.6.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
